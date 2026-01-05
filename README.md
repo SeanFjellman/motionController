@@ -127,4 +127,4 @@ Ideas to turn this into an actual drone controller:
 
 ## License
 
-MIT (or replace with your preferred license).
+MEEEEEEEE
