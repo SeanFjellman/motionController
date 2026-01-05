@@ -25,6 +25,12 @@ void setup() {
 int16_t trials = 1;
 int16_t sX, sY, sZ, nX, nY, nZ;
 
+
+
+
+
+
+
 void loop() {
     int16_t ax, ay, az;
     int16_t gx, gy, gz;
@@ -118,12 +124,18 @@ void loop() {
       if(digitalRead(2) == HIGH)
       {
         Serial.println("New Center");
-            for (int i=0; i<N; i++) 
-    {
-        mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
-        sumX += ax; sumY += ay; sumZ += az;
-        delay(5);
-    }
+        sumX = 0;
+        sumY = 0;
+        sumZ = 0;
+
+
+
+        for (int i=0; i<N; i++) 
+        {
+          mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
+          sumX += ax; sumY += ay; sumZ += az;
+          delay(5);
+        }
         
 
 
