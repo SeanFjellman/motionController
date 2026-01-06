@@ -20,6 +20,8 @@ void setup() {
 //   }
   Serial.println("MPU init done");
   pinMode(2, INPUT);
+  //pinMode(4, INPUT_PULLUP);
+  //pinMode(2, INPUT);
 }
 
 int16_t trials = 1;
@@ -27,11 +29,11 @@ int16_t sX, sY, sZ, nX, nY, nZ;
 
 
 
+// enum ArmState { ARM_DOWN, ARM_UP };
+// ArmState armState = ARM_DOWN;
 
+//For Average
 
-
-
-void loop() {
     int16_t ax, ay, az;
     int16_t gx, gy, gz;
 
@@ -40,39 +42,22 @@ void loop() {
     int32_t sumZ = 0;
     const int N = 80;
 
+
+void loop() {
+
+
 //   int16_t trials = 1;
 
 //   int16_t sX, sY, sZ, nX, nY, nZ;
 
+
+// int tiltState = digitalRead(4);
+
+
   if (trials == 1)
   {
-
-
-
-    Serial.println("Average");
-
-
-    for (int i=0; i<N; i++) 
-    {
-        mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
-        sumX += ax; sumY += ay; sumZ += az;
-        delay(5);
-    }
-        
-
-
-        
-        sX = sumX / N;
-        sY = sumY / N;
-        sZ = sumZ / N;
-
-        Serial.print(sX);
-        Serial.print(", ");
-        Serial.print(sY);
-        Serial.print(", ");
-        Serial.println(sZ);
-
-        trials++;
+    AverageFunction();
+    trials++;
   }
   else
   {
@@ -91,66 +76,53 @@ void loop() {
         {
           if (changeX > 4000) 
           {
-            Serial.print("Left ");
+            //Serial.print("Left ");
             moved = true; 
          }
           else if (changeX < -4000)
           { 
-            Serial.print("Right ");
+            //Serial.print("Right ");
             moved = true; 
           }
         }
 
-
+        //1500 90 up -1600 90 down
         if(abs(changeY) > abs(changeX))
         {
-          if (changeY > 500) 
+          if (changeY > 500 && changeY < 15000) 
           { 
             Serial.print("Backwards");
-            moved = true;
-        }
-          else if(changeY < -800) 
-          { 
-            Serial.print("Forwards");
+            //Serial.print(changeY);
             moved = true;
           }
-        }
+          else if(changeY < -800 && changeY > -14000) 
+          { 
+            Serial.print("Forwards");
+            //Serial.print(changeY);
+            moved = true;
+          }
+          else if(changeY > 15000)
+          {
+            Serial.print("Move Up");
+          }
+          else if(changeY < -14000)
+          {
+            Serial.print("Move Down");
+          }
 
-      if (!moved) Serial.print("Center");
+
+        }
+        //Serial.print(changeY);
+        Serial.println();
+        delay(50);
 
       Serial.println();
 
       
       if(digitalRead(2) == HIGH)
       {
-        Serial.println("New Center");
-        sumX = 0;
-        sumY = 0;
-        sumZ = 0;
-
-
-
-        for (int i=0; i<N; i++) 
-        {
-          mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
-          sumX += ax; sumY += ay; sumZ += az;
-          delay(5);
-        }
-        
-
-
-        
-        sX = sumX / N;
-        sY = sumY / N;
-        sZ = sumZ / N;
-
-        Serial.print(sX);
-        Serial.print(", ");
-        Serial.print(sY);
-        Serial.print(", ");
-        Serial.println(sZ);
-
-
+        Serial.print("New ");
+        AverageFunction();
       }
 
         // Serial.print("X:");
@@ -224,3 +196,29 @@ void loop() {
   //delay(6000);
 }
 
+
+void AverageFunction()
+{
+      Serial.println("Average:");
+
+
+    for (int i=0; i<N; i++) 
+    {
+        mpu.getMotion6(&ax,&ay,&az,&gx,&gy,&gz);
+        sumX += ax; sumY += ay; sumZ += az;
+        delay(5);
+    }
+        
+
+
+        
+        sX = sumX / N;
+        sY = sumY / N;
+        sZ = sumZ / N;
+
+        Serial.print(sX);
+        Serial.print(", ");
+        Serial.print(sY);
+        Serial.print(", ");
+        Serial.println(sZ);
+}
