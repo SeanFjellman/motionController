@@ -1,130 +1,137 @@
 # motionController
-# Hand-Motion Drone Controller (MPU6050 + Arduino)
 
-This project reads hand movement using an **MPU6050 IMU** (accelerometer + gyroscope) and converts it into simple direction commands intended to control a drone.  
-Right now, the output is **printed to the Serial Monitor** as: `Left`, `Right`, `Forwards`, `Backwards`, or `Center`.
+Hand-motion controller using an **Arduino + MPU6050 IMU**.  
+Right now it prints simple commands to the Serial Monitor:
+
+- `Left`, `Right`
+- `Forwards`, `Backwards`
+- `Move Up`, `Move Down`
+
+This is a temporary input method for a controller project (eventually intended to control something like a drone).
+
+---
 
 ## What it does
 
-- On boot, the controller:
-  - Initializes the MPU6050 over I2C
-  - Takes an initial **“center” calibration** by averaging raw accelerometer readings
-- In the main loop:
-  - Continuously reads accelerometer values
-  - Computes change from the calibrated center
-  - Determines which direction you moved your hand based on thresholds
-  - Prints the detected direction to Serial
-- A **recenter button** (digital pin 2) can be pressed to take a new “center” average at any time.
+### Startup / Calibration
+- Initializes the MPU6050 over I2C
+- Takes a **baseline “center”** reading by averaging `N = 80` accelerometer samples
+- Prints the baseline as: `sX, sY, sZ`
 
-## Hardware needed
+### Main Loop
+Every loop:
+1. Reads accelerometer values `(nX, nY, nZ)`
+2. Computes delta from baseline:
+   - `changeX = nX - sX`
+   - `changeY = nY - sY`
+   - `changeZ = nZ - sZ` *(computed but not used right now)*
+3. Determines direction based on thresholds:
+   - **Left / Right** from `changeX`
+   - **Forwards / Backwards** from `changeY` *(with a “hold” requirement)*
+   - **Move Up / Move Down** from large `changeY` values
 
-- Arduino (Uno/Nano both work)
+### Recenter Button
+- Pressing the button on **D2** triggers a new baseline calibration.
+
+---
+
+## Hardware
+
+- Arduino Uno or Nano
 - MPU6050 module
-- Push button (for recenter)
+- Push button (recenter)
 - Jumper wires
-- (Optional) glove/strap/mount to attach MPU6050 to your hand
+
+---
 
 ## Wiring
 
 ### MPU6050 → Arduino (I2C)
-**Arduino Uno / Nano:**
-- `VCC` → `5V` (or `3.3V` if your MPU6050 board requires it)
+**Uno / Nano**
+- `VCC` → `5V` *(or `3.3V` if required by your breakout)*
 - `GND` → `GND`
 - `SDA` → `A4`
 - `SCL` → `A5`
 
-> Many MPU6050 breakout boards have a regulator and can take 5V. If yours is a bare sensor board, use 3.3V only.
-
-### Recenter Button → Arduino
+### Recenter Button → Arduino (D2)
+Current code uses `pinMode(2, INPUT);`, so wire:
 - One side of button → `5V`
 - Other side of button → `D2`
 - Add a **10kΩ pulldown resistor** from `D2` → `GND`
 
-**Alternative (simpler):** use the internal pullup  
-If you change the code to `pinMode(2, INPUT_PULLUP);`, then wire:
-- One side of button → `D2`
-- Other side of button → `GND`
-…and treat pressed as `LOW`.
+> Optional improvement: use `INPUT_PULLUP` in code and wire the button to `GND` instead.
 
-## Software setup
+---
+
+## Software Setup
 
 ### Libraries
-This code uses:
-- `Wire.h` (built-in)
-- `MPU6050.h` (MPU6050 library)
+- `Wire.h` *(built-in)*
+- `MPU6050.h` *(install via Arduino Library Manager)*
 
-Install the MPU6050 library in Arduino IDE:
+In Arduino IDE:
 - **Tools → Manage Libraries…**
-- Search: **MPU6050**
-- Install the library that matches your include (`#include <MPU6050.h>`)
+- Search for **MPU6050**
+- Install a library that matches: `#include <MPU6050.h>`
 
-### Upload
-1. Open the `.ino` in Arduino IDE
-2. Select your board (Uno/Nano) and correct port
-3. Upload
-4. Open Serial Monitor at **9600 baud**
+### Upload / Serial Monitor
+- Upload the sketch
+- Open Serial Monitor at **9600 baud**
+- Expected startup output:
+  - `BOOT`
+  - `MPU init done`
+  - `Average:`
+  - baseline values like `-2190, 668, 17766`
 
-You should see:
-- `BOOT`
-- `MPU init done`
-- `Average`
-- then direction outputs
+---
 
-## How direction detection works
+## How Movement Detection Works
 
-On first run (trial 1), we compute a baseline:
-- Collect `N = 80` accelerometer readings
-- Average them → `(sX, sY, sZ)` which becomes your **center**
+### Baseline (Center)
+On the first run, the code averages 80 samples and stores:
+- `sX, sY, sZ`
 
-Each loop after that:
-- Read the new accelerometer values `(nX, nY, nZ)`
-- Compute changes:
-  - `changeX = nX - sX`
-  - `changeY = nY - sY`
-  - `changeZ = nZ - sZ` (currently not used for direction)
-
-Then we decide direction using thresholds:
-- **Left / Right** determined mainly from **X**:
+### Left / Right (X axis)
+The code checks X only when it dominates Y:
+- If `abs(changeX) > abs(changeY)`:
   - `changeX > 4000` → `Left`
   - `changeX < -4000` → `Right`
-- **Forwards / Backwards** determined mainly from **Y**:
-  - `changeY > 500` → `Backwards`
-  - `changeY < -800` → `Forwards`
-- If neither is strong enough → `Center`
 
-To avoid mixing axes, it compares magnitudes and uses whichever axis dominates:
-- If `abs(changeX) > abs(changeY)` → use X decision
-- If `abs(changeY) > abs(changeX)` → use Y decision
+### Forwards / Backwards (Y axis) with “Hold”
+To prevent accidental forward/back while lifting:
+- It requires the movement to persist for a few cycles before printing:
+  - `trials > 3` before allowing Forward/Backward
+- Thresholds:
+  - `changeY > 500` and `< 15000` → `Backwards`
+  - `changeY < -800` and `> -14000` → `Forwards`
 
-## Re-centering (calibration button)
+After printing Forward/Backward, the code resets `trials = 1`.
 
-If `digitalRead(2) == HIGH`, the controller prints `New Center` and re-runs the averaging step to set a new `(sX, sY, sZ)` baseline.
+### Up / Down (Large Y change)
+These trigger on large Y values:
+- `changeY > 15000` → `Move Up`
+- `changeY < -14000` → `Move Down`
 
-This is useful if:
-- Your hand position changes
-- The sensor shifts on your glove
-- You want a new neutral orientation
+> Note: Up/Down are currently based on the same axis as Forward/Backward (Y), so depending on how the sensor is mounted you may need to swap axes or adjust thresholds.
 
-## Notes / Known limitations
+---
 
-- This version only prints direction to Serial — it does **not** send commands to a drone yet.
-- It uses **raw accelerometer values** (no filtering), so fast jitter may cause noisy outputs.
-- Thresholds are tuned to one setup; you may need to adjust them depending on:
-  - sensor mounting
-  - hand angle range
-  - board orientation
-- `changeZ` is computed but not used yet (could be used for throttle/up/down).
+## Known Limitations
 
-## Next steps (planned)
+- Uses **raw accelerometer values** (no filtering), so noise/jitter can happen.
+- Up/Down vs Forward/Backward can still overlap depending on mounting orientation.
+- Thresholds are setup-specific (mounting, hand position, sensor orientation).
 
-Ideas to turn this into an actual drone controller:
-- Add **wireless transmitter** (nRF24L01, ESP-NOW, Bluetooth, etc.)
-- Convert direction into control channels (throttle / yaw / pitch / roll)
-- Add smoothing:
-  - moving average / low-pass filter
-  - deadzone tuning
-- Add arming/disarming and failsafe behavior
+---
+
+## Next Steps (Planned)
+
+- Add filtering (low-pass / moving average)
+- Add wireless output (nRF24L01, ESP-NOW, Bluetooth, etc.)
+- Map commands into real control channels (throttle / pitch / roll / yaw)
+- Add safety (arming/disarming, failsafe)
+
+---
 
 ## License
-
-MEEEEEEEE
+TBD
