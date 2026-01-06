@@ -42,6 +42,8 @@ int16_t sX, sY, sZ, nX, nY, nZ;
     int32_t sumZ = 0;
     const int N = 80;
 
+    
+
 
 void loop() {
 
@@ -89,19 +91,27 @@ void loop() {
         //1500 90 up -1600 90 down
         if(abs(changeY) > abs(changeX))
         {
-          if (changeY > 500 && changeY < 15000) 
-          { 
-            Serial.print("Backwards");
-            //Serial.print(changeY);
-            moved = true;
+
+          if (trials > 3)
+          {
+              if (changeY > 500 && changeY < 15000) 
+              { 
+                Serial.print("Backwards");
+                //Serial.print(changeY);
+                moved = true;
+                trials = 1;
+              }
+              else if(changeY < -800 && changeY > -14000) 
+              { 
+                Serial.print("Forwards");
+                //Serial.print(changeY);
+                moved = true;
+                trials = 1;
+              }
           }
-          else if(changeY < -800 && changeY > -14000) 
-          { 
-            Serial.print("Forwards");
-            //Serial.print(changeY);
-            moved = true;
-          }
-          else if(changeY > 15000)
+
+
+          if(changeY > 15000)
           {
             Serial.print("Move Up");
           }
@@ -116,7 +126,7 @@ void loop() {
         Serial.println();
         delay(50);
 
-      Serial.println();
+      //Serial.println();
 
       
       if(digitalRead(2) == HIGH)
@@ -125,6 +135,9 @@ void loop() {
         AverageFunction();
       }
 
+
+
+    trials++; // used to tell how long in forward or backwards
 
   }
 
@@ -137,7 +150,12 @@ void loop() {
 
 void AverageFunction()
 {
-      Serial.println("Average:");
+    Serial.println("Average:");
+
+    sumX = 0;
+    sumY = 0;
+    sumZ = 0;
+
 
 
     for (int i=0; i<N; i++) 
