@@ -76,12 +76,12 @@ void loop() {
         {
           if (changeX > 4000) 
           {
-            //Serial.print("Left ");
+            Serial.print("Left ");
             moved = true; 
          }
           else if (changeX < -4000)
           { 
-            //Serial.print("Right ");
+            Serial.print("Right ");
             moved = true; 
           }
         }
@@ -125,72 +125,10 @@ void loop() {
         AverageFunction();
       }
 
-        // Serial.print("X:");
-        // Serial.print(changeX);
 
-        // Serial.print("Y:");
-        // Serial.print(changeY);
-
-        // Serial.print("Z:");
-        // Serial.print(changeZ);
-
-        // Serial.println("");
-
-
-        // if(changeY > 500)
-        // {
-        //   Serial.println("Move Up");
-        // }
-        // else if(changeY < -1000)
-        // {
-        //   Serial.println("Move Down");
-        // }
-
-        // if(changeX > 1000)
-        // {
-        //     //worth moving left
-        //     Serial.println("Move Left");
-
-        // }
-        // else if (changeX < -1000)
-        // {
-        //     // worth moving Left
-        //     Serial.println("Move Right");
-        // }
-        // else if (changeY > 500)
-        // {
-        //     Serial.println("Move Up");
-        // }
-        // else if(changeY < -1000)
-        // {
-        //     Serial.println("Move Down");
-        // }
-        // else
-        // {
-        //     Serial.println("Center");
-        // }
-
-
-        // Serial.print(nX);
-        // Serial.print(", ");
-        // Serial.print(nY);
-        // Serial.print(", ");
-        // Serial.println(nZ);
   }
 
-//   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
 
-//   Serial.print("Accel (raw): ");
-//   Serial.print(ax); Serial.print(", ");
-//   Serial.print(ay); Serial.print(", ");
-//   Serial.print(az);
-
-  //Serial.println("Done");
-
-//   Serial.print(" | Gyro (raw): ");
-//   Serial.print(gx); Serial.print(", ");
-//   Serial.print(gy); Serial.print(", ");
-//   Serial.println(gz);
 
   delay(200);
   //delay(6000);
